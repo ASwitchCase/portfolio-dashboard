@@ -137,32 +137,7 @@ function FormField({ field, value, onChange, disabled, availableSkills }) {
   }
 
   if (type === "date") {
-    const hasToggle = Boolean(field.currentToggleLabel);
-    const isCurrent = hasToggle && !value;
-    return (
-      <div className="form-field">
-        <label htmlFor={name}>{label}</label>
-        <input
-          id={name}
-          type="date"
-          required={required}
-          value={value ?? ""}
-          disabled={disabled || (hasToggle && isCurrent)}
-          onChange={(e) => onChange(e.target.value)}
-        />
-        {hasToggle && (
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={isCurrent}
-              disabled={disabled}
-              onChange={(e) => onChange(e.target.checked ? "" : value || "")}
-            />
-            {field.currentToggleLabel}
-          </label>
-        )}
-      </div>
-    );
+    return <DateField field={field} value={value} onChange={onChange} disabled={disabled} />;
   }
 
   if (type === "skills") {
@@ -206,6 +181,52 @@ function FormField({ field, value, onChange, disabled, availableSkills }) {
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
       />
+    </div>
+  );
+}
+
+function DateField({ field, value, onChange, disabled }) {
+  const { name, label, required } = field;
+  const hasToggle = Boolean(field.currentToggleLabel);
+  // `override` is null until the user explicitly clicks the checkbox. While
+  // null, checked-ness just follows whether there's a date (so a freshly
+  // loaded record shows the right state). Once the user clicks it, their
+  // choice wins even though clearing/restoring the date would otherwise
+  // make the derived value flip straight back.
+  const [override, setOverride] = useState(null);
+  const [lastDate, setLastDate] = useState(value || "");
+
+  if (value && value !== lastDate) {
+    setLastDate(value);
+  }
+
+  const isCurrent = hasToggle && (override ?? !value);
+
+  return (
+    <div className="form-field">
+      <label htmlFor={name}>{label}</label>
+      <input
+        id={name}
+        type="date"
+        required={required}
+        value={value ?? ""}
+        disabled={disabled || isCurrent}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      {hasToggle && (
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={isCurrent}
+            disabled={disabled}
+            onChange={(e) => {
+              setOverride(e.target.checked);
+              onChange(e.target.checked ? "" : lastDate);
+            }}
+          />
+          {field.currentToggleLabel}
+        </label>
+      )}
     </div>
   );
 }
